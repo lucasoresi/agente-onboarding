@@ -33,6 +33,27 @@ describe('validateFile: reglas por celda', () => {
     expect(r.errors[1].message).toContain('¿Quisiste decir "Administrador"?');
   });
 
+  it('un nombre sin letras (solo un número) es error: parece un código', () => {
+    const r = validateFile(
+      parsed('2026-07-15_Sedes.xlsx', [
+        ['Nombre de la sede', 'Código'],
+        ['Derivantes', 1],
+        ['Dow Center', 55],
+        [57, 'sdfsdfsdf'],
+        ['Nanni', 89],
+        ['47', 'sdf54'],
+        ['Sede 2', 'S2'],
+      ]),
+      getSchema('sedes'),
+    );
+    expect(r.ok).toBe(false);
+    expect(r.errors.map((e) => [e.rule, e.row, e.column, e.value])).toEqual([
+      ['tipo_invalido', 4, 'Nombre de la sede', '57'],
+      ['tipo_invalido', 6, 'Nombre de la sede', '47'],
+    ]);
+    expect(r.errors[0].message).toContain('parece un código');
+  });
+
   it('duplicados ignorando mayúsculas y espacios (Review Focus 3)', () => {
     const r = validateFile(
       parsed('2026-07-15_Usuarios.xlsx', [USERS_HEADER, ['Ana', 'Ana@Lab.com', 'Editor'], ['Ana B', 'ana@lab.com ', 'Editor']]),

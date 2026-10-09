@@ -23,6 +23,16 @@ describe('SCHEMAS', () => {
     }
   });
 
+  it('toda columna de nombre o descripción exige al menos una letra (tipo name)', () => {
+    const isNameLike = (label: string) => /^(nombre|descripci[oó]n)\b/i.test(label) || ['Sede', 'Proveedor', 'Región'].includes(label);
+    for (const s of SCHEMAS) {
+      for (const c of s.columns) {
+        if (isNameLike(c.label)) expect(c.type, `${s.id}.${c.key}`).toBe('name');
+        else expect(c.type, `${s.id}.${c.key}`).not.toBe('name');
+      }
+    }
+  });
+
   it('reglas puntuales de la spec', () => {
     expect(getSchema('obras_sociales').columns.find((c) => c.key === 'valorUb')?.level).toBe('required');
     expect(getSchema('usuarios').columns.find((c) => c.key === 'rol')?.enumValues).toEqual([

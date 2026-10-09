@@ -156,6 +156,7 @@ Las columnas dinámicas son las que no coinciden con ninguna columna fija. Si al
 | Columna desconocida (en esquemas sin dinámicas) | Advertencia |
 | Celda obligatoria vacía | Error |
 | Tipo inválido (número, fecha, email) | Error |
+| Nombre o descripción sin ninguna letra (por ejemplo "57"): parece un código | Error |
 | Número fuera de rango (negativo; rendimiento ≤ 0) | Error |
 | Valor fuera del enum | Error, con sugerencia por similitud |
 | Duplicado en clave única o par único | Error (indica las filas involucradas) |

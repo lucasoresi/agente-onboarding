@@ -33,7 +33,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['usuarios'],
     templateFile: 'Template_Usuarios_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre completo', 'text', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
+      req('nombre', 'Nombre completo', 'name', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
       req('email', 'Email', 'email', { aliases: ['mail', 'correo', 'correo electronico', 'e-mail'], unique: true }),
       req('rol', 'Rol', 'enum', { enumValues: ['Administrador', 'Editor', 'Solo lectura'] }),
     ],
@@ -46,7 +46,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['sedes'],
     templateFile: 'Template_Sedes_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre de la sede', 'text', { aliases: ['nombre sede', 'sucursal'], unique: true }),
+      req('nombre', 'Nombre de la sede', 'name', { aliases: ['nombre sede', 'sucursal'], unique: true }),
       rec('codigo', 'Código', 'text', { aliases: ['codigo de sede', 'codigo sede', 'cod. sede'], unique: true }),
     ],
   },
@@ -58,7 +58,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['sectores', 'centrosdecosto'],
     templateFile: 'Template_Sectores_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre del sector', 'text', {
+      req('nombre', 'Nombre del sector', 'name', {
         aliases: ['sector', 'nombre sector', 'centro de costo'],
         unique: true,
       }),
@@ -76,7 +76,7 @@ export const SCHEMAS: Schema[] = [
         aliases: ['codigo practica', 'cod. practica', 'cod practica', 'codigo'],
         unique: true,
       }),
-      req('nombre', 'Nombre de práctica', 'text', { aliases: ['nombre practica', 'descripcion', 'practica'] }),
+      req('nombre', 'Nombre de práctica', 'name', { aliases: ['nombre practica', 'descripcion', 'practica'] }),
     ],
     dynamic: {
       placeholder: /^\[?\s*nombre del arancel\s*\d*\s*\]?$/,
@@ -101,13 +101,13 @@ export const SCHEMAS: Schema[] = [
         aliases: ['codigo insumo', 'cod. insumo', 'cod insumo', 'codigo'],
         unique: true,
       }),
-      req('nombre', 'Nombre de insumo', 'text', { aliases: ['nombre insumo', 'descripcion', 'insumo'] }),
+      req('nombre', 'Nombre de insumo', 'name', { aliases: ['nombre insumo', 'descripcion', 'insumo'] }),
       req('precio', 'Precio de última compra', 'number', {
         aliases: ['precio', 'precio ultima compra', 'ultimo precio'],
         min: 0,
       }),
       req('fecha', 'Fecha de última compra', 'date', { aliases: ['fecha', 'fecha ultima compra'] }),
-      opt('proveedor', 'Proveedor'),
+      opt('proveedor', 'Proveedor', 'name'),
       opt('activo', 'Activo', 'boolean'),
       opt('cantidad', 'Cantidad', 'number', { aliases: ['stock'], min: 0 }),
     ],
@@ -158,10 +158,10 @@ export const SCHEMAS: Schema[] = [
     templateFile: 'Template_Facturacion_Optacost.xlsx',
     columns: [
       req('codigoPractica', 'Código de práctica', 'text', { aliases: ['codigo practica', 'cod. practica'] }),
-      req('nombrePractica', 'Nombre de práctica', 'text', { aliases: ['nombre practica', 'practica'] }),
+      req('nombrePractica', 'Nombre de práctica', 'name', { aliases: ['nombre practica', 'practica'] }),
       req('codigoConvenio', 'Código de convenio', 'text', { aliases: ['codigo convenio', 'cod. convenio'] }),
-      req('nombreConvenio', 'Nombre de convenio', 'text', { aliases: ['nombre convenio', 'convenio'] }),
-      req('sede', 'Sede'),
+      req('nombreConvenio', 'Nombre de convenio', 'name', { aliases: ['nombre convenio', 'convenio'] }),
+      req('sede', 'Sede', 'name'),
       req('cantidad', 'Cantidad facturada', 'number', { aliases: ['cantidad'], min: 0 }),
       req('bruto', 'Bruto facturado', 'number', { aliases: ['bruto', 'monto facturado'] }),
       opt('ventanilla', 'Bruto en ventanilla', 'number', { aliases: ['ventanilla'] }),
@@ -177,7 +177,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['costosindirectos'],
     templateFile: 'Template_Costos_Indirectos_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre', 'text', { aliases: ['concepto', 'nombre del costo'] }),
+      req('nombre', 'Nombre', 'name', { aliases: ['concepto', 'nombre del costo'] }),
       req('monto', 'Monto', 'number', { aliases: ['importe'], min: 0 }),
     ],
   },
@@ -190,10 +190,10 @@ export const SCHEMAS: Schema[] = [
     templateFile: 'Template_Convenios_Optacost.xlsx',
     columns: [
       req('codigo', 'Código', 'text', { aliases: ['codigo de convenio', 'codigo convenio'], unique: true }),
-      req('nombre', 'Nombre', 'text', { aliases: ['nombre de convenio', 'nombre convenio'] }),
+      req('nombre', 'Nombre', 'name', { aliases: ['nombre de convenio', 'nombre convenio'] }),
       req('tipo', 'Tipo de arancel', 'enum', { enumValues: ['Derivación', 'Especial'] }),
       opt('ajuste', 'Ajuste', 'number'),
-      opt('region', 'Región'),
+      opt('region', 'Región', 'name'),
     ],
   },
   {
@@ -205,7 +205,7 @@ export const SCHEMAS: Schema[] = [
     templateFile: 'Template_Obras_Sociales_Optacost.xlsx',
     columns: [
       req('codigo', 'Código', 'text', { aliases: ['codigo de obra social', 'codigo os'], unique: true }),
-      req('nombre', 'Nombre', 'text', { aliases: ['nombre de obra social', 'obra social'] }),
+      req('nombre', 'Nombre', 'name', { aliases: ['nombre de obra social', 'obra social'] }),
       req('valorUb', 'Valor UB', 'number', { aliases: ['ub', 'valor de ub'], min: 0 }),
     ],
   },
@@ -218,7 +218,7 @@ export const SCHEMAS: Schema[] = [
     templateFile: 'Template_Modulos_Obra_Social_Optacost.xlsx',
     columns: [
       req('codigo', 'Código de práctica', 'text', { aliases: ['codigo practica', 'cod. practica'], unique: true }),
-      req('descripcion', 'Descripción de práctica', 'text', {
+      req('descripcion', 'Descripción de práctica', 'name', {
         aliases: ['descripcion', 'descripcion practica', 'nombre de practica'],
       }),
     ],
@@ -241,7 +241,7 @@ export const SCHEMAS: Schema[] = [
     templateFile: 'Template_Lista_Precios_Competencia_Optacost.xlsx',
     columns: [
       req('codigo', 'Código de examen', 'text', { aliases: ['codigo examen', 'codigo'], unique: true }),
-      req('descripcion', 'Descripción', 'text', { aliases: ['descripcion de examen', 'descripcion examen'] }),
+      req('descripcion', 'Descripción', 'name', { aliases: ['descripcion de examen', 'descripcion examen'] }),
       req('precio', 'Precio', 'number', { min: 0 }),
     ],
   },

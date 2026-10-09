@@ -27,7 +27,8 @@ export type StepId = (typeof STEP_IDS)[number];
 
 export type Category = '01' | '02' | '03' | '04';
 export type Level = 'required' | 'recommended' | 'optional';
-export type ColType = 'text' | 'number' | 'date' | 'email' | 'enum' | 'boolean';
+/** 'name': texto que debe tener al menos una letra (un nombre no puede ser solo un número). */
+export type ColType = 'text' | 'name' | 'number' | 'date' | 'email' | 'enum' | 'boolean';
 
 export type ColumnSpec = {
   key: string;

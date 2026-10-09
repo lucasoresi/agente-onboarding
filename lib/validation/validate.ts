@@ -86,6 +86,11 @@ function checkValue(col: ColumnSpec, v: Cell, line: number, decimalComma: boolea
         err({ rule: 'valor_no_permitido', row: line, column: col.label, value: text, message: `${at} debe ser "Sí" o "No" (valor: "${text}").` });
       }
       return;
+    case 'name':
+      if (!/\p{L}/u.test(text)) {
+        err({ rule: 'tipo_invalido', row: line, column: col.label, value: text, message: `${at} es "${text}", que parece un código y no un nombre: tiene que tener al menos una letra. ¿Están invertidas las columnas?` });
+      }
+      return;
     case 'text':
       return;
   }
