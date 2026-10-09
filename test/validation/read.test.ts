@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as XLSX from 'xlsx';
 import { MAX_ROWS, ReadError, readFile } from '@/lib/validation/read';
 import { csvBytes, xlsxBytes } from '../helpers';
 
@@ -73,5 +74,38 @@ describe('readFile errores', () => {
   it('rechaza más de MAX_ROWS filas', () => {
     const text = 'Nombre del sector\n' + 'S\n'.repeat(MAX_ROWS + 1);
     expect(readError(() => readFile(csvBytes(text), 'a.csv')).code).toBe('demasiadas_filas');
+  });
+});
+
+describe('readFile xlsx: rango declarado vs. real', () => {
+  it('ignora un !ref falsificado enorme y lee rápido', () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Nombre del sector'], ['Química']]);
+    ws['!ref'] = 'A1:C200000';
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+    const bytes = new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
+    const t0 = Date.now();
+    const f = readFile(bytes, 'a.xlsx');
+    expect(Date.now() - t0).toBeLessThan(2000);
+    expect(f.sheets[0].lines.map((l) => l.line)).toEqual([1, 2]);
+    expect(f.sheets[0].lines).toHaveLength(2);
+  });
+
+  it('rechaza una celda vacía perdida a cientos de miles de filas sin materializar el rango', () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Nombre del sector'], ['Química']]);
+    ws['C200000'] = { t: 's', v: '' };
+    ws['!ref'] = 'A1:C200000';
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+    const bytes = new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
+    const t0 = Date.now();
+    expect(readError(() => readFile(bytes, 'a.xlsx')).code).toBe('demasiadas_filas');
+    expect(Date.now() - t0).toBeLessThan(2000);
+  });
+
+  it('rechaza un xlsx con más filas reales que el máximo', () => {
+    const rows: string[][] = [['Nombre del sector']];
+    for (let i = 0; i < MAX_ROWS + 100; i++) rows.push(['S']);
+    expect(readError(() => readFile(xlsxBytes({ Hoja1: rows }), 'a.xlsx')).code).toBe('demasiadas_filas');
   });
 });
