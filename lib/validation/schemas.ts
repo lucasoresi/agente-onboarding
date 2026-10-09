@@ -81,6 +81,7 @@ export const SCHEMAS: Schema[] = [
     dynamic: {
       placeholder: /^\[?\s*nombre del arancel\s*\d*\s*\]?$/,
       min: 0,
+      label: 'arancel',
       firstRequired: true,
       missingMessage:
         'Agregá al menos una columna de arancel, con el nombre real del arancel como encabezado (por ejemplo "Derivación").',
@@ -224,7 +225,8 @@ export const SCHEMAS: Schema[] = [
     dynamic: {
       placeholder: /^\[?\s*codigo de obra social\s*\d*\s*\]?$/,
       min: 0,
-      firstRequired: false,
+      label: 'obra social',
+      firstRequired: true,
       missingMessage: 'Agregá al menos una columna por obra social, con su código como encabezado.',
       replaceHint: 'reemplazalo por el código real de la obra social',
     },

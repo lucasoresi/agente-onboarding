@@ -33,7 +33,7 @@ describe('SCHEMAS', () => {
     expect(getSchema('convenios').columns.find((c) => c.key === 'tipo')?.enumValues).toEqual(['Derivación', 'Especial']);
     expect(getSchema('sedes').columns.find((c) => c.key === 'codigo')?.level).toBe('recommended');
     expect(getSchema('practicas').dynamic?.firstRequired).toBe(true);
-    expect(getSchema('modulos_obra_social').dynamic?.firstRequired).toBe(false);
+    expect(getSchema('modulos_obra_social').dynamic?.firstRequired).toBe(true);
     expect(getSchema('relaciones_consumo').columns.find((c) => c.key === 'rendimiento')?.greaterThan).toBe(0);
   });
 

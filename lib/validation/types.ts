@@ -47,6 +47,8 @@ export type DynamicSpec = {
   /** Se compara contra el encabezado normalizado para detectar marcadores sin reemplazar. */
   placeholder: RegExp;
   min: number;
+  /** Qué representa cada columna dinámica, para los mensajes (por ejemplo "arancel"). */
+  label: string;
   /** La primera columna dinámica es obligatoria en cada fila. */
   firstRequired: boolean;
   missingMessage: string;

@@ -96,6 +96,21 @@ describe('validateFile: columnas dinámicas', () => {
       ['fuera_de_rango', 4, 'Especial'],
     ]);
   });
+
+  it('en Módulos por obra social exige la primera obra social, como marca la plantilla', () => {
+    const r = validateFile(
+      parsed('2026-07-15_ModulosObraSocial.xlsx', [
+        ['Código de práctica', 'Descripción de práctica', 'OSDE', 'IOMA'],
+        ['1', 'Hemograma', 10, ''],
+        ['2', 'Glucemia', '', 5],
+      ]),
+      getSchema('modulos_obra_social'),
+      { practicas: new Set(['1', '2']) },
+    );
+    expect(r.errors.map((e) => [e.rule, e.row, e.column])).toEqual([['celda_vacia', 3, 'OSDE']]);
+    expect(r.errors[0].message).toContain('obra social');
+    expect(r.errors[0].message).not.toContain('arancel');
+  });
 });
 
 describe('validateFile: plantilla y archivo', () => {

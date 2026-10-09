@@ -138,7 +138,7 @@ Las columnas salen de las plantillas de Drive, y la obligatoriedad y los enums d
 | 9 | `costos_indirectos` | 03 | Nombre (O), Monto (O, número ≥ 0) |
 | 10 | `convenios` | 04 | Código (O, único), Nombre (O), Tipo de arancel (O, enum `Derivación`/`Especial`), Ajuste (Op, número), Región (Op) |
 | 11 | `obras_sociales` | 04 | Código (O, único), Nombre (O), Valor UB (O, número ≥ 0) |
-| 12 | `modulos_obra_social` | 04 | Código de práctica (O, único), Descripción de práctica (O), **dinámicas** `[Código de obra social N]` (≥1; número ≥ 0 o vacío) |
+| 12 | `modulos_obra_social` | 04 | Código de práctica (O, único), Descripción de práctica (O), **dinámicas** `[Código de obra social N]` (≥1, la primera O según la plantilla; número ≥ 0) |
 | 13 | `precios_competencia` | 04 | Código de examen (O, único), Descripción (O), Precio (O, número ≥ 0) |
 | 14 | `matching_codigos` | 04 | Código de examen de la competencia (O), Código de examen propio (O); par único |
 

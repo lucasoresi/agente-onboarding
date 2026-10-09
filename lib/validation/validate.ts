@@ -172,7 +172,7 @@ export function validateFile(file: ParsedFile, schema: Schema, catalogs: Catalog
         const v = cells[d.index] ?? null;
         if (isEmpty(v)) {
           if (dyn.firstRequired && idx === 0) {
-            err({ rule: 'celda_vacia', row: line, column: d.header, message: `Fila ${line}: "${d.header}" está vacío; la primera columna de arancel es obligatoria.` });
+            err({ rule: 'celda_vacia', row: line, column: d.header, message: `Fila ${line}: "${d.header}" está vacío; la primera columna de ${dyn.label} es obligatoria.` });
           }
           return;
         }
