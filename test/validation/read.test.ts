@@ -109,3 +109,14 @@ describe('readFile xlsx: rango declarado vs. real', () => {
     expect(readError(() => readFile(xlsxBytes({ Hoja1: rows }), 'a.xlsx')).code).toBe('demasiadas_filas');
   });
 });
+
+describe('readFile CSV de una sola columna', () => {
+  it('no parte por comas un CSV de una columna sin delimitador', () => {
+    const f = readFile(csvBytes('Nombre del sector\nQuímica, Hormonas\nQuímica, Orina\n'), 's.csv');
+    expect(f.sheets[0].lines.map((l) => l.cells)).toEqual([['Nombre del sector'], ['Química, Hormonas'], ['Química, Orina']]);
+  });
+  it('mantiene la coma cuando el encabezado la tiene', () => {
+    const f = readFile(csvBytes('Código de práctica,Nombre de práctica\n1,Hemograma\n'), 'p.csv');
+    expect(f.sheets[0].lines[1].cells).toEqual(['1', 'Hemograma']);
+  });
+});
