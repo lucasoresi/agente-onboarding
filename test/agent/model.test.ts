@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { getModel, isRateLimit, withFallback } from '@/lib/agent/model';
 import { textStream } from './mock-model';
 
-const apiError = (statusCode: number) =>
-  new APICallError({ message: `HTTP ${statusCode}`, url: 'https://x', requestBodyValues: {}, statusCode, isRetryable: true });
+const apiError = (statusCode: number, isRetryable = true) =>
+  new APICallError({ message: `HTTP ${statusCode}`, url: 'https://x', requestBodyValues: {}, statusCode, isRetryable });
 
 async function textOf(model: Parameters<typeof streamText>[0]['model']) {
   const r = streamText({ model, prompt: 'hola', maxRetries: 0 });
@@ -24,10 +24,16 @@ describe('withFallback', () => {
     expect(await textOf(withFallback(primary, fallback))).toBe('desde respaldo');
   });
 
-  it('no usa el respaldo ante otros errores', async () => {
-    const primary = new MockLanguageModelV4({ doStream: async () => { throw apiError(500); } });
+  it('usa el modelo de respaldo ante un 503', async () => {
+    const primary = new MockLanguageModelV4({ doStream: async () => { throw apiError(503); } });
+    const fallback = new MockLanguageModelV4({ doStream: async () => textStream('desde respaldo') });
+    expect(await textOf(withFallback(primary, fallback))).toBe('desde respaldo');
+  });
+
+  it('no usa el respaldo ante errores no reintentables', async () => {
+    const primary = new MockLanguageModelV4({ doStream: async () => { throw apiError(400, false); } });
     const fallback = new MockLanguageModelV4({ doStream: async () => textStream('no') });
-    await expect(textOf(withFallback(primary, fallback))).rejects.toThrow('HTTP 500');
+    await expect(textOf(withFallback(primary, fallback))).rejects.toThrow('HTTP 400');
   });
 });
 

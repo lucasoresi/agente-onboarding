@@ -19,12 +19,18 @@ export type AgentDeps = {
   docsAvailable: boolean;
   onEnd?: () => Promise<void> | void;
   maxRetries?: number;
+  abortSignal?: AbortSignal;
 };
+
+function isUnavailable(e: unknown): boolean {
+  if (APICallError.isInstance(e)) return e.statusCode == null || e.statusCode >= 500 || e.isRetryable;
+  return e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError');
+}
 
 export function friendlyError(error: unknown): string {
   const e = RetryError.isInstance(error) ? error.lastError : error;
   if (isRateLimit(e)) return 'Se alcanzó el límite gratuito de Gemini. Esperá un minuto y reenviá el mensaje.';
-  if (APICallError.isInstance(e) && (e.statusCode ?? 0) >= 500) {
+  if (isUnavailable(e)) {
     return 'Gemini no está respondiendo en este momento. Probá de nuevo en unos segundos.';
   }
   console.error('[agent]', e);
@@ -39,6 +45,8 @@ export async function streamAgentResponse(messages: UIMessage[], deps: AgentDeps
     tools: deps.tools,
     stopWhen: isStepCount(6),
     maxRetries: deps.maxRetries ?? 3,
+    abortSignal: deps.abortSignal,
+    timeout: { stepMs: 45_000 },
     onEnd: async () => {
       await deps.onEnd?.();
     },

@@ -33,6 +33,20 @@ describe('streamAgentResponse', () => {
   });
 });
 
+describe('streamAgentResponse: fallas de red y timeouts', () => {
+  const failing = (e: unknown) => new MockLanguageModelV4({ doStream: async () => { throw e; } });
+  it('un error de red (sin statusCode) da el mensaje de Gemini caído', async () => {
+    const model = failing(new APICallError({ message: 'fetch failed', url: 'u', requestBodyValues: {} }));
+    const res = await streamAgentResponse(userMessage, { model, tools: {}, instructions: 'x', docsAvailable: true, maxRetries: 0 });
+    expect(await res.text()).toContain('no está respondiendo');
+  });
+  it('un TimeoutError da el mensaje de Gemini caído', async () => {
+    const model = failing(new DOMException('timed out', 'TimeoutError'));
+    const res = await streamAgentResponse(userMessage, { model, tools: {}, instructions: 'x', docsAvailable: true, maxRetries: 0 });
+    expect(await res.text()).toContain('no está respondiendo');
+  });
+});
+
 describe('friendlyError', () => {
   it('mensajes por tipo de error', () => {
     expect(friendlyError(new Error('x'))).toContain('error inesperado');

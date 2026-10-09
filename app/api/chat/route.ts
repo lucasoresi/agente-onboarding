@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       instructions: buildInstructions({ skill: docs.skill, docsAvailable: docs.available, lab }),
       docsAvailable: docs.available,
       onEnd: docs.close,
+      abortSignal: req.signal,
     });
   } catch (e) {
     await docs.close();

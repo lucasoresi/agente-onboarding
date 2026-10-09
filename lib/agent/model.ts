@@ -7,7 +7,12 @@ export function isRateLimit(e: unknown): boolean {
   return APICallError.isInstance(e) && e.statusCode === 429;
 }
 
-/** Si el modelo principal responde 429 (límite del free tier), reintenta con el de respaldo. */
+/** 429, 5xx o cualquier falla reintentable (red, sobrecarga): vale la pena probar con el modelo de respaldo. */
+export function shouldFallback(e: unknown): boolean {
+  return APICallError.isInstance(e) && (e.statusCode === 429 || e.isRetryable);
+}
+
+/** Si el modelo principal falla con 429/5xx/red, reintenta con el de respaldo. */
 export function withFallback(primary: WrappableModel, fallback: WrappableModel) {
   return wrapLanguageModel({
     model: primary,
@@ -17,7 +22,7 @@ export function withFallback(primary: WrappableModel, fallback: WrappableModel) 
         try {
           return await doGenerate();
         } catch (e) {
-          if (isRateLimit(e)) return fallback.doGenerate(params);
+          if (shouldFallback(e)) return fallback.doGenerate(params);
           throw e;
         }
       },
@@ -25,7 +30,7 @@ export function withFallback(primary: WrappableModel, fallback: WrappableModel) 
         try {
           return await doStream();
         } catch (e) {
-          if (isRateLimit(e)) return fallback.doStream(params);
+          if (shouldFallback(e)) return fallback.doStream(params);
           throw e;
         }
       },
