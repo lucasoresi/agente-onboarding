@@ -33,6 +33,25 @@ describe('validateFile: reglas por celda', () => {
     expect(r.errors[1].message).toContain('¿Quisiste decir "Administrador"?');
   });
 
+  it('el nombre de una persona no puede tener números ni símbolos', () => {
+    const r = validateFile(
+      parsed('2026-07-15_Usuarios.xlsx', [
+        USERS_HEADER,
+        ['Luca Soresi', 'luca@gmail.com', 'Solo lectura'],
+        [' Leo2', 'leo@x.com', 'Administrador'],
+        ["José María O'Neil", 'jm@x.com', 'Editor'],
+        ['Ana Pérez-Gómez', 'ana@x.com', 'Editor'],
+        ['Juan_Perez', 'juan@x.com', 'Editor'],
+      ]),
+      getSchema('usuarios'),
+    );
+    expect(r.errors.map((e) => [e.rule, e.row, e.value])).toEqual([
+      ['tipo_invalido', 3, 'Leo2'],
+      ['tipo_invalido', 6, 'Juan_Perez'],
+    ]);
+    expect(r.errors[0].message).toContain('solo puede tener letras');
+  });
+
   it('un nombre sin letras (solo un número) es error: parece un código', () => {
     const r = validateFile(
       parsed('2026-07-15_Sedes.xlsx', [
@@ -157,7 +176,7 @@ describe('validateFile: plantilla y archivo', () => {
   });
 
   it('limita los issues guardados pero cuenta todos', () => {
-    const rows: Cell[][] = [USERS_HEADER, ...Array.from({ length: MAX_ISSUES + 10 }, (_, i) => [`U${i}`, '', 'Editor'])];
+    const rows: Cell[][] = [USERS_HEADER, ...Array.from({ length: MAX_ISSUES + 10 }, () => ['Usuario', '', 'Editor'])];
     const r = validateFile(parsed('2026-07-15_Usuarios.xlsx', rows), getSchema('usuarios'));
     expect(r.errorCount).toBe(MAX_ISSUES + 10);
     expect(r.errors).toHaveLength(MAX_ISSUES);

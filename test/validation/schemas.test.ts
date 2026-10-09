@@ -27,8 +27,9 @@ describe('SCHEMAS', () => {
     const isNameLike = (label: string) => /^(nombre|descripci[oó]n)\b/i.test(label) || ['Sede', 'Proveedor', 'Región'].includes(label);
     for (const s of SCHEMAS) {
       for (const c of s.columns) {
-        if (isNameLike(c.label)) expect(c.type, `${s.id}.${c.key}`).toBe('name');
-        else expect(c.type, `${s.id}.${c.key}`).not.toBe('name');
+        const expected = s.id === 'usuarios' && c.key === 'nombre' ? 'personName' : 'name';
+        if (isNameLike(c.label)) expect(c.type, `${s.id}.${c.key}`).toBe(expected);
+        else expect(['name', 'personName'], `${s.id}.${c.key}`).not.toContain(c.type);
       }
     }
   });

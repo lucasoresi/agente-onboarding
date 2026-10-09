@@ -91,6 +91,11 @@ function checkValue(col: ColumnSpec, v: Cell, line: number, decimalComma: boolea
         err({ rule: 'tipo_invalido', row: line, column: col.label, value: text, message: `${at} es "${text}", que parece un código y no un nombre: tiene que tener al menos una letra. ¿Están invertidas las columnas?` });
       }
       return;
+    case 'personName':
+      if (!/\p{L}/u.test(text) || !/^[\p{L}\s'’.-]+$/u.test(text)) {
+        err({ rule: 'tipo_invalido', row: line, column: col.label, value: text, message: `${at} es "${text}": un nombre de persona solo puede tener letras, espacios, guiones y apóstrofos (sin números ni símbolos).` });
+      }
+      return;
     case 'text':
       return;
   }

@@ -33,7 +33,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['usuarios'],
     templateFile: 'Template_Usuarios_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre completo', 'name', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
+      req('nombre', 'Nombre completo', 'personName', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
       req('email', 'Email', 'email', { aliases: ['mail', 'correo', 'correo electronico', 'e-mail'], unique: true }),
       req('rol', 'Rol', 'enum', { enumValues: ['Administrador', 'Editor', 'Solo lectura'] }),
     ],

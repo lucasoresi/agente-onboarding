@@ -52,7 +52,7 @@ describe('runValidation', () => {
 
 describe('summarizeForModel', () => {
   it('trunca errores y advertencias para el modelo', async () => {
-    const rows = [['Nombre completo', 'Email', 'Rol'], ...Array.from({ length: 30 }, (_, i) => [`U${i}`, '', 'Editor'])];
+    const rows = [['Nombre completo', 'Email', 'Rol'], ...Array.from({ length: 30 }, () => ['Usuario', '', 'Editor'])];
     const id = files.put(parsed('2026-07-15_Usuarios.xlsx', rows));
     const s = summarizeForModel(await runValidation({ files, progress, lab }, { fileId: id })) as {
       totalErrores: number;
