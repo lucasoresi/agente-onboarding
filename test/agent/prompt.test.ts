@@ -4,7 +4,7 @@ import { STEPS } from '@/lib/onboarding/steps';
 
 describe('buildInstructions', () => {
   it('incluye los 14 pasos, la convención de adjuntos y la skill', () => {
-    const s = buildInstructions({ docsAvailable: true, lab: 'labmedicina', skill: 'GUIA-XYZ' });
+    const s = buildInstructions({ docsAvailable: true, skill: 'GUIA-XYZ' });
     for (const step of STEPS) expect(s).toContain(step.title);
     expect(s).toContain('fileId');
     expect(s).toContain('GUIA-XYZ');
@@ -12,7 +12,12 @@ describe('buildInstructions', () => {
     expect(s).toContain('https://www.optacost.com/docs/onboarding/checklist-datos');
     expect(s).not.toContain('no está disponible');
   });
+  it('es genérico para cualquier laboratorio cliente: no nombra a ninguno', () => {
+    const s = buildInstructions({ docsAvailable: true });
+    expect(s).toContain('laboratorio cliente nuevo');
+    expect(s.toLowerCase()).not.toContain('labmedicina');
+  });
   it('avisa cuando la documentación no está disponible', () => {
-    expect(buildInstructions({ docsAvailable: false, lab: 'x' })).toContain('no está disponible');
+    expect(buildInstructions({ docsAvailable: false })).toContain('no está disponible');
   });
 });

@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     return await streamAgentResponse(body.messages, {
       model,
       tools,
-      instructions: buildInstructions({ skill: docs.skill, docsAvailable: docs.available, lab }),
+      instructions: buildInstructions({ skill: docs.skill, docsAvailable: docs.available }),
       docsAvailable: docs.available,
       onEnd: docs.close,
       abortSignal: req.signal,

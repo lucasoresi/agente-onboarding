@@ -7,7 +7,7 @@ Asistente web que guía a un laboratorio en la carga de datos de Optacost, valid
 ```bash
 npm install
 cp .env.example .env.local   # completar GEMINI_API_KEY y GEMINI_MODEL
-npm run dev                  # http://localhost:3000/?lab=labmedicina
+npm run dev -- -p 3100       # http://localhost:3100/?lab=<id-del-laboratorio> (por defecto: demo)
 ```
 
 | Variable | Descripción |
@@ -20,7 +20,7 @@ npm run dev                  # http://localhost:3000/?lab=labmedicina
 ## Cómo funciona
 
 - Los archivos se parsean en el server (`/api/upload`) y quedan en memoria 1 hora. **Su contenido nunca se manda a Gemini**: el modelo solo recibe el reporte de validación.
-- La validación es código determinístico (`lib/validation`), con 14 esquemas basados en las plantillas de "Optacost — Onboarding Labmedicina" y en `/onboarding/checklist-datos`.
+- La validación es código determinístico (`lib/validation`), con 14 esquemas que un test compara contra las plantillas oficiales de Optacost (`test/fixtures/templates/`). Si cambian las plantillas, reemplazá esos archivos y corré `npm test`.
 - El progreso se guarda en `.onboarding/<lab>.json`. Un paso solo se completa con una validación sin errores.
 
 ## Tests

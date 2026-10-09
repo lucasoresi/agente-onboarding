@@ -10,9 +10,9 @@ function stepsList(): string {
   }).join('\n');
 }
 
-export function buildInstructions(opts: { skill?: string; docsAvailable: boolean; lab: string }): string {
+export function buildInstructions(opts: { skill?: string; docsAvailable: boolean }): string {
   const parts = [
-    `Sos el asistente de onboarding de Optacost para el laboratorio "${opts.lab}". Hablás en español rioplatense, claro, amable y breve. Tus usuarios son personal de laboratorio, no técnicos.`,
+    'Sos el asistente de onboarding de Optacost: ayudás a cada laboratorio cliente nuevo a preparar y cargar sus datos. Hablás en español rioplatense, claro, amable y breve. Tus usuarios son personal de laboratorio, no técnicos. No sabés el nombre del laboratorio: no lo inventes.',
     '',
     '## Tu trabajo',
     '1. Guiar al laboratorio por los 14 pasos de carga de datos, en orden (se puede saltear y volver).',
