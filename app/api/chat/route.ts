@@ -34,11 +34,16 @@ export async function POST(req: Request) {
     ...createProgressTools({ progress, lab }),
   };
 
-  return streamAgentResponse(body.messages, {
-    model,
-    tools,
-    instructions: buildInstructions({ skill: docs.skill, docsAvailable: docs.available, lab }),
-    docsAvailable: docs.available,
-    onEnd: docs.close,
-  });
+  try {
+    return await streamAgentResponse(body.messages, {
+      model,
+      tools,
+      instructions: buildInstructions({ skill: docs.skill, docsAvailable: docs.available, lab }),
+      docsAvailable: docs.available,
+      onEnd: docs.close,
+    });
+  } catch (e) {
+    await docs.close();
+    throw e;
+  }
 }
