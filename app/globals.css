@@ -1,0 +1,38 @@
+@import 'tailwindcss';
+
+body {
+  background: #f1f5f9;
+}
+
+.markdown p {
+  margin: 0.4rem 0;
+}
+.markdown ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.markdown ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.markdown a {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+.markdown strong {
+  font-weight: 600;
+}
+.markdown code {
+  background: #f1f5f9;
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+}
+.markdown table {
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid #cbd5e1;
+  padding: 0.15rem 0.4rem;
+}
