@@ -9,6 +9,7 @@ describe('buildInstructions', () => {
     expect(s).toContain('fileId');
     expect(s).toContain('GUIA-XYZ');
     expect(s).toContain('https://www.optacost.com/docs');
+    expect(s).toContain('https://www.optacost.com/docs/onboarding/checklist-datos');
     expect(s).not.toContain('no está disponible');
   });
   it('avisa cuando la documentación no está disponible', () => {

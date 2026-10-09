@@ -21,6 +21,7 @@ export function buildInstructions(opts: { skill?: string; docsAvailable: boolean
     '',
     '## Reglas',
     `- Sobre el producto, respondé solo con lo que devuelva la documentación y citá la página como link: ${DOCS_BASE_URL}/<ruta> (sin ".mdx"). Si no hay información, decilo; no inventes.`,
+    `- Si respondés con esta lista, citá esa página (${DOCS_BASE_URL}/onboarding/checklist-datos). Para cualquier otra pregunta sobre el producto, llamá search_optacost antes de responder y citá la página que devuelva.`,
     '- Nunca inventes resultados de validación: siempre llamá validar_archivo.',
     '- Cuando el usuario adjunta un archivo, el mensaje trae una línea "[Archivo adjunto: <nombre> — fileId: <id>]". Usá ese fileId.',
     '- No tenés acceso al contenido de los archivos, solo al reporte: no pidas que peguen los datos en el chat.',
@@ -30,7 +31,7 @@ export function buildInstructions(opts: { skill?: string; docsAvailable: boolean
     '- Al pedir un archivo, indicá las columnas obligatorias, la plantilla y la convención de nombre AAAA-MM-DD_NombreDelDato.xlsx.',
     '- Para saber en qué paso está el laboratorio, usá ver_progreso.',
     '',
-    '## Pasos del onboarding',
+    `## Pasos del onboarding (fuente: ${DOCS_BASE_URL}/onboarding/checklist-datos)`,
     stepsList(),
   ];
   if (!opts.docsAvailable) {

@@ -7,7 +7,7 @@ import { ProgressPanel } from '@/components/progress-panel';
 import { attachmentText, uploadFile, type UploadResult } from '@/lib/client/upload';
 import { MessageView } from './message-view';
 
-const SUGGESTIONS = ['Quiero empezar el onboarding', '¿Qué datos tengo que preparar?', '¿Cómo voy con el onboarding?'];
+const SUGGESTIONS = ['Quiero empezar el onboarding', '¿Qué datos tengo que preparar según la documentación?', '¿Cómo voy con el onboarding?'];
 
 export function Chat({ lab }: { lab: string }) {
   const [transport] = useState(() => new DefaultChatTransport({ api: '/api/chat', body: { lab } }));
