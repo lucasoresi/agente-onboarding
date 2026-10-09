@@ -47,6 +47,34 @@ describe('streamAgentResponse: fallas de red y timeouts', () => {
   });
 });
 
+describe('streamAgentResponse: cierre del cliente MCP', () => {
+  it('llama a onEnd exactamente una vez cuando Gemini falla con 429', async () => {
+    let closed = 0;
+    const model = new MockLanguageModelV4({
+      doStream: async () => {
+        throw new APICallError({ message: 'quota', url: 'u', requestBodyValues: {}, statusCode: 429, isRetryable: true });
+      },
+    });
+    const res = await streamAgentResponse(userMessage, {
+      model, tools: {}, instructions: 'x', docsAvailable: true, maxRetries: 0, onEnd: () => { closed++; },
+    });
+    await res.text();
+    expect(closed).toBe(1);
+  });
+  it('llama a onEnd una vez cuando el cliente cancela la respuesta', async () => {
+    let closed = 0;
+    const model = scriptedModel(() => textStream('hola'));
+    const res = await streamAgentResponse(userMessage, {
+      model, tools: {}, instructions: 'x', docsAvailable: true, maxRetries: 0, onEnd: () => { closed++; },
+    });
+    const reader = res.body!.getReader();
+    await reader.read();
+    await reader.cancel();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(closed).toBe(1);
+  });
+});
+
 describe('friendlyError', () => {
   it('mensajes por tipo de error', () => {
     expect(friendlyError(new Error('x'))).toContain('error inesperado');

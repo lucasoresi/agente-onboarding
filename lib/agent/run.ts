@@ -47,15 +47,20 @@ export async function streamAgentResponse(messages: UIMessage[], deps: AgentDeps
     maxRetries: deps.maxRetries ?? 3,
     abortSignal: deps.abortSignal,
     timeout: { stepMs: 45_000 },
-    onEnd: async () => {
-      await deps.onEnd?.();
-    },
   });
+  // onEnd de toUIMessageStream corre al terminar, ante error de Gemini y al cancelar el cliente; se corre una sola vez.
+  let ended = false;
+  const closeOnce = async () => {
+    if (ended) return;
+    ended = true;
+    await deps.onEnd?.();
+  };
   return createUIMessageStreamResponse({
     stream: toUIMessageStream({
       stream: result.stream,
       originalMessages: messages,
       onError: friendlyError,
+      onEnd: closeOnce,
       messageMetadata: ({ part }) => (part.type === 'start' ? { docsAvailable: deps.docsAvailable } : undefined),
     }),
   });
