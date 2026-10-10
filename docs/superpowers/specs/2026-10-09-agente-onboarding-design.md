@@ -157,7 +157,7 @@ Las columnas dinámicas son las que no coinciden con ninguna columna fija. Si al
 | Celda obligatoria vacía | Error |
 | Tipo inválido (número, fecha, email) | Error |
 | Nombre o descripción sin ninguna letra (por ejemplo "57"): parece un código | Error |
-| Nombre de persona (Usuarios) con números o símbolos (por ejemplo "Leo2") | Error |
+| Nombre de usuario o de sede con números o símbolos (por ejemplo "Leo2", "Derivantes32"); los códigos sí pueden ser alfanuméricos | Error |
 | Número fuera de rango (negativo; rendimiento ≤ 0) | Error |
 | Valor fuera del enum | Error, con sugerencia por similitud |
 | Duplicado en clave única o par único | Error (indica las filas involucradas) |

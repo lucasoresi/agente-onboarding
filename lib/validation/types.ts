@@ -27,8 +27,8 @@ export type StepId = (typeof STEP_IDS)[number];
 
 export type Category = '01' | '02' | '03' | '04';
 export type Level = 'required' | 'recommended' | 'optional';
-/** 'name': texto con al menos una letra (un nombre no puede ser solo un número). 'personName': nombre de persona, solo letras, espacios, guiones, apóstrofos y puntos. */
-export type ColType = 'text' | 'name' | 'personName' | 'number' | 'date' | 'email' | 'enum' | 'boolean';
+/** 'name': texto con al menos una letra (un nombre no puede ser solo un número). 'lettersName': solo letras, espacios, guiones, apóstrofos y puntos (sin números ni símbolos). */
+export type ColType = 'text' | 'name' | 'lettersName' | 'number' | 'date' | 'email' | 'enum' | 'boolean';
 
 export type ColumnSpec = {
   key: string;

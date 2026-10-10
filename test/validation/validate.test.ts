@@ -52,23 +52,34 @@ describe('validateFile: reglas por celda', () => {
     expect(r.errors[0].message).toContain('solo puede tener letras');
   });
 
-  it('un nombre sin letras (solo un número) es error: parece un código', () => {
+  it('el nombre de la sede solo admite letras; el código puede ser alfanumérico', () => {
     const r = validateFile(
       parsed('2026-07-15_Sedes.xlsx', [
         ['Nombre de la sede', 'Código'],
-        ['Derivantes', 1],
-        ['Dow Center', 55],
-        [57, 'sdfsdfsdf'],
-        ['Nanni', 89],
-        ['47', 'sdf54'],
-        ['Sede 2', 'S2'],
+        ['Derivantes32', 'AA03'],
+        [478, 'lñs'],
+        ['Nanni', 1000],
+        ['Dow Center', 'S-2'],
       ]),
       getSchema('sedes'),
     );
+    expect(r.errors.map((e) => [e.rule, e.row, e.column, e.value])).toEqual([
+      ['tipo_invalido', 2, 'Nombre de la sede', 'Derivantes32'],
+      ['tipo_invalido', 3, 'Nombre de la sede', '478'],
+    ]);
+    expect(r.errors[0].message).toContain('solo puede tener letras');
+    expect(r.errors[1].message).toContain('parece un código');
+  });
+
+  it('un nombre sin letras (solo un número) es error: parece un código', () => {
+    const r = validateFile(
+      parsed('2026-07-15_Sectores.xlsx', [['Nombre del sector'], ['Hematología'], [57], ['Química 2'], ['47']]),
+      getSchema('sectores'),
+    );
     expect(r.ok).toBe(false);
     expect(r.errors.map((e) => [e.rule, e.row, e.column, e.value])).toEqual([
-      ['tipo_invalido', 4, 'Nombre de la sede', '57'],
-      ['tipo_invalido', 6, 'Nombre de la sede', '47'],
+      ['tipo_invalido', 3, 'Nombre del sector', '57'],
+      ['tipo_invalido', 5, 'Nombre del sector', '47'],
     ]);
     expect(r.errors[0].message).toContain('parece un código');
   });

@@ -33,7 +33,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['usuarios'],
     templateFile: 'Template_Usuarios_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre completo', 'personName', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
+      req('nombre', 'Nombre completo', 'lettersName', { aliases: ['nombre y apellido', 'apellido y nombre'] }),
       req('email', 'Email', 'email', { aliases: ['mail', 'correo', 'correo electronico', 'e-mail'], unique: true }),
       req('rol', 'Rol', 'enum', { enumValues: ['Administrador', 'Editor', 'Solo lectura'] }),
     ],
@@ -46,7 +46,7 @@ export const SCHEMAS: Schema[] = [
     fileNameKeys: ['sedes'],
     templateFile: 'Template_Sedes_Optacost.xlsx',
     columns: [
-      req('nombre', 'Nombre de la sede', 'name', { aliases: ['nombre sede', 'sucursal'], unique: true }),
+      req('nombre', 'Nombre de la sede', 'lettersName', { aliases: ['nombre sede', 'sucursal'], unique: true }),
       rec('codigo', 'Código', 'text', { aliases: ['codigo de sede', 'codigo sede', 'cod. sede'], unique: true }),
     ],
   },

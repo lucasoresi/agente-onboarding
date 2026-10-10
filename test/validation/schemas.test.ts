@@ -27,9 +27,11 @@ describe('SCHEMAS', () => {
     const isNameLike = (label: string) => /^(nombre|descripci[oó]n)\b/i.test(label) || ['Sede', 'Proveedor', 'Región'].includes(label);
     for (const s of SCHEMAS) {
       for (const c of s.columns) {
-        const expected = s.id === 'usuarios' && c.key === 'nombre' ? 'personName' : 'name';
+        // Usuarios y Sedes: solo letras. El resto de los nombres admite números ("Química 2", "Tubo 13x75").
+        const lettersOnly = ['usuarios.nombre', 'sedes.nombre'].includes(`${s.id}.${c.key}`);
+        const expected = lettersOnly ? 'lettersName' : 'name';
         if (isNameLike(c.label)) expect(c.type, `${s.id}.${c.key}`).toBe(expected);
-        else expect(['name', 'personName'], `${s.id}.${c.key}`).not.toContain(c.type);
+        else expect(['name', 'lettersName'], `${s.id}.${c.key}`).not.toContain(c.type);
       }
     }
   });
