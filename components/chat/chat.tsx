@@ -46,7 +46,9 @@ export function Chat({ lab }: { lab: string }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const bottom = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  // Si la persona subió a leer un mensaje anterior, no la arrastramos hacia abajo mientras llega la respuesta.
+  const stickToBottom = useRef(true);
 
   const busy = status === 'submitted' || status === 'streaming';
   const docsUnavailable = messages.some(
@@ -54,7 +56,11 @@ export function Chat({ lab }: { lab: string }) {
   );
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scroller.current;
+    const last = messages[messages.length - 1];
+    if (!el || (!stickToBottom.current && last?.role !== 'user')) return;
+    // Solo se desplaza la lista de mensajes: scrollIntoView movía también la página entera.
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
@@ -109,7 +115,7 @@ export function Chat({ lab }: { lab: string }) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-50 text-zinc-950">
+    <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 text-zinc-950">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 bg-white px-7 py-3.5">
         <div className="flex items-center gap-3.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-950 text-white">
@@ -140,7 +146,14 @@ export function Chat({ lab }: { lab: string }) {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto px-6 pb-6 pt-8">
+          <div
+            ref={scroller}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            }}
+            className="flex-1 overflow-y-auto px-6 pb-6 pt-8"
+          >
             <div className="mx-auto flex max-w-[760px] flex-col gap-5">
               {messages.length === 0 && (
                 <div className="mx-auto mt-6 w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-7 text-sm shadow-sm">
@@ -184,7 +197,6 @@ export function Chat({ lab }: { lab: string }) {
                   </button>
                 </div>
               )}
-              <div ref={bottom} />
             </div>
           </div>
 

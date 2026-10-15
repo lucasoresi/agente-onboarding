@@ -67,7 +67,7 @@ export function ProgressPanel({ progress }: { progress: LabProgress | null }) {
                 return (
                   <li
                     key={p.id}
-                    className={`flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13px] ${current ? 'bg-zinc-100' : ''}`}
+                    className={`relative flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13px] ${current ? 'bg-zinc-100' : ''}`}
                     title={p.ultimoArchivo ?? undefined}
                   >
                     <StatusDot estado={p.estado} current={current} />
