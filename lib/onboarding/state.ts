@@ -42,7 +42,7 @@ function assertLab(lab: string) {
 }
 
 const STATUSES: StepStatus[] = ['pendiente', 'con_errores', 'validado', 'completo'];
-const CATALOG_NAMES: CatalogName[] = ['practicas', 'insumos', 'obras_sociales'];
+const CATALOG_NAMES: CatalogName[] = ['practicas', 'insumos', 'obras_sociales', 'competencia'];
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**

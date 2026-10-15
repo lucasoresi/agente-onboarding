@@ -246,6 +246,7 @@ export const SCHEMAS: Schema[] = [
       req('descripcion', 'Descripción', 'name', { aliases: ['descripcion de examen', 'descripcion examen'] }),
       req('precio', 'Precio', 'number', { min: 0 }),
     ],
+    providesCatalog: { catalog: 'competencia', column: 'codigo' },
   },
   {
     id: 'matching_codigos',
@@ -261,7 +262,10 @@ export const SCHEMAS: Schema[] = [
       req('propio', 'Código de examen propio', 'text', { aliases: ['codigo propio', 'codigo de practica'] }),
     ],
     uniquePairs: [['competencia', 'propio']],
-    catalogRefs: [{ column: 'propio', catalog: 'practicas' }],
+    catalogRefs: [
+      { column: 'competencia', catalog: 'competencia' },
+      { column: 'propio', catalog: 'practicas' },
+    ],
   },
 ];
 

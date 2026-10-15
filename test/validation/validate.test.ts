@@ -232,3 +232,28 @@ describe('pickSheet (Review Focus 4)', () => {
     expect(pickSheet(file, getSchema('usuarios')).name).toBe('USUARIOS');
   });
 });
+
+describe('Matching: código de la competencia contra la lista de precios', () => {
+  const header = ['Código de examen de la competencia', 'Código de examen propio'];
+  it('la lista de precios de competencia aporta su catálogo de códigos', () => {
+    expect(getSchema('precios_competencia').providesCatalog).toEqual({ catalog: 'competencia', column: 'codigo' });
+  });
+
+  it('avisa si el código de la competencia no está en la lista de precios validada', () => {
+    const r = validateFile(
+      parsed('2026-10-15_Matching.csv', [header, ['C-100', '475'], ['C-1000', '475']]),
+      getSchema('matching_codigos'),
+      { competencia: new Set(['c-100']), practicas: new Set(['475']) },
+    );
+    expect(r.ok).toBe(true);
+    expect(r.warnings.map((w) => [w.rule, w.row, w.value])).toEqual([['codigo_no_en_catalogo', 3, 'C-1000']]);
+    expect(r.warnings[0].message).toContain('Lista de precios de competencia');
+  });
+
+  it('si la lista de precios todavía no se validó, avisa que no pudo verificar', () => {
+    const r = validateFile(parsed('2026-10-15_Matching.csv', [header, ['C-100', '475']]), getSchema('matching_codigos'), {
+      practicas: new Set(['475']),
+    });
+    expect(r.warnings.map((w) => w.rule)).toEqual(['catalogo_no_verificado']);
+  });
+});

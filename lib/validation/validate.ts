@@ -19,7 +19,12 @@ export const MAX_ISSUES = 500;
 
 export type Catalogs = Partial<Record<CatalogName, Set<string>>>;
 
-const CATALOG_TITLES: Record<CatalogName, string> = { practicas: 'Prácticas', insumos: 'Insumos', obras_sociales: 'Obras sociales' };
+const CATALOG_TITLES: Record<CatalogName, string> = {
+  practicas: 'Prácticas',
+  insumos: 'Insumos',
+  obras_sociales: 'Obras sociales',
+  competencia: 'Lista de precios de competencia',
+};
 
 export function pickSheet(file: ParsedFile, schema: Schema): Sheet {
   const wanted = schema.sheetNames.map(normalizeHeader);

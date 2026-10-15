@@ -56,7 +56,7 @@ export type DynamicSpec = {
   replaceHint: string;
 };
 
-export type CatalogName = 'practicas' | 'insumos' | 'obras_sociales';
+export type CatalogName = 'practicas' | 'insumos' | 'obras_sociales' | 'competencia';
 
 export type Schema = {
   id: StepId;
