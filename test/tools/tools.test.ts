@@ -47,6 +47,24 @@ describe('runValidation', () => {
   });
 });
 
+describe('runValidation: "tipo" no pisa una detección clara', () => {
+  it('si los encabezados son claramente de otro paso, valida ese paso y avisa al modelo', async () => {
+    const id = files.put(parsed('2026-10-14_Practicas.xlsx', [['Código de práctica', 'Nombre de práctica', 'Derivación'], ['45', 'Hemograma', 10]]));
+    const out = await runValidation({ files, progress, lab }, { fileId: id, tipo: 'sedes' });
+    expect(out).toMatchObject({ status: 'validado', report: { schemaId: 'practicas', ok: true }, tipoCorregido: { pedido: 'sedes', detectado: 'practicas' } });
+    expect((await progress.load(lab)).steps.sedes.status).toBe('pendiente');
+    expect((await progress.load(lab)).steps.practicas.status).toBe('validado');
+    expect(summarizeForModel(out)).toMatchObject({ tipo: 'practicas', tipoCorregido: { pedido: 'sedes', detectado: 'practicas' } });
+  });
+
+  it('si "tipo" coincide con la detección, no hay corrección', async () => {
+    const id = files.put(parsed('2026-10-14_Practicas.xlsx', [['Código de práctica', 'Nombre de práctica', 'Derivación'], ['45', 'Hemograma', 10]]));
+    const out = await runValidation({ files, progress, lab }, { fileId: id, tipo: 'practicas' });
+    expect(out).toMatchObject({ status: 'validado', report: { schemaId: 'practicas' } });
+    expect('tipoCorregido' in out).toBe(false);
+  });
+});
+
 describe('summarizeForModel', () => {
   it('trunca errores y advertencias para el modelo', async () => {
     const rows = [['Nombre completo', 'Email', 'Rol'], ...Array.from({ length: 30 }, () => ['Usuario', '', 'Editor'])];

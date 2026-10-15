@@ -21,3 +21,11 @@ describe('buildInstructions', () => {
     expect(buildInstructions({ docsAvailable: false })).toContain('no está disponible');
   });
 });
+
+describe('prompt: tipo detectado', () => {
+  it('explica tipoCorregido y pide no mandar tipo para el paso esperado', () => {
+    const p = buildInstructions({ docsAvailable: true });
+    expect(p).toContain('tipoCorregido');
+    expect(p).toContain('No mandes "tipo" para indicar el paso que esperás');
+  });
+});

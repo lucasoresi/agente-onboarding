@@ -15,10 +15,13 @@ export type PasoCompleto = { archivo: string; filas?: number; codigosQueSeQuitan
 
 /** `mensaje` es la instrucción para el modelo; `aviso` es lo que ve el usuario en la interfaz. */
 export type ValidateOutput =
-  | { status: 'validado'; report: ValidationReport; pasoCompleto?: PasoCompleto }
+  | { status: 'validado'; report: ValidationReport; pasoCompleto?: PasoCompleto; tipoCorregido?: TipoCorregido }
   | { status: 'ambiguo'; candidatos: { id: StepId; titulo: string }[]; mensaje: string; aviso: string }
   | { status: 'desconocido'; mensaje: string; aviso: string }
   | { status: 'expirado'; mensaje: string; aviso: string };
+
+/** El modelo pidió validar como un paso, pero los encabezados son claramente de otro. */
+export type TipoCorregido = { pedido: StepId; detectado: StepId };
 
 export type ToolDeps = { files: FileStore; progress: ProgressStore; lab: string };
 
@@ -31,7 +34,12 @@ export async function runValidation(deps: ToolDeps, input: { fileId: string; tip
       aviso: 'Ese archivo ya no está disponible. Volvé a adjuntarlo.',
     };
   }
-  const detection = detectSchema(file, input.tipo);
+  // "tipo" solo decide cuando la detección automática no es concluyente: el modelo a veces lo manda con el
+  // paso que espera ("sedes") aunque el archivo sea claramente de otro, y eso marcaba con errores el paso equivocado.
+  const auto = detectSchema(file);
+  const detection = auto.kind === 'ok' || !input.tipo ? auto : detectSchema(file, input.tipo);
+  const tipoCorregido: TipoCorregido | undefined =
+    input.tipo && auto.kind === 'ok' && auto.schema.id !== input.tipo ? { pedido: input.tipo, detectado: auto.schema.id } : undefined;
   if (detection.kind === 'ambiguo') {
     return {
       status: 'ambiguo',
@@ -56,7 +64,8 @@ export async function runValidation(deps: ToolDeps, input: { fileId: string; tip
   await deps.progress.recordValidation(deps.lab, schema.id, report, catalog);
 
   const prev = before.steps[schema.id];
-  if (prev.status !== 'completo') return { status: 'validado', report };
+  const extra = tipoCorregido ? { tipoCorregido } : {};
+  if (prev.status !== 'completo') return { status: 'validado', report, ...extra };
   const pasoCompleto: PasoCompleto = { archivo: prev.lastFile ?? '', filas: prev.rows };
   const oldCodes = catalog ? before.catalogs[catalog.name] : undefined;
   if (catalog && oldCodes) {
@@ -64,7 +73,7 @@ export async function runValidation(deps: ToolDeps, input: { fileId: string; tip
     const quitados = oldCodes.filter((c) => !nuevos.has(normalizeCode(c)));
     if (quitados.length) pasoCompleto.codigosQueSeQuitan = quitados;
   }
-  return { status: 'validado', report, pasoCompleto };
+  return { status: 'validado', report, pasoCompleto, ...extra };
 }
 
 const MAX_CODIGOS_QUITADOS = 20;
@@ -88,6 +97,7 @@ export function summarizeForModel(out: ValidateOutput) {
         }),
       },
     }),
+    ...(out.tipoCorregido && { tipoCorregido: out.tipoCorregido }),
     status: 'validado',
     archivo: r.fileName,
     tipo: r.schemaId,
@@ -110,7 +120,7 @@ export function createValidateTool(deps: ToolDeps) {
       tipo: z
         .enum(STEP_IDS)
         .optional()
-        .describe('Tipo de datos. Solo si el usuario lo indicó o si una validación anterior respondió "ambiguo" o "desconocido".'),
+        .describe('Tipo de datos. Solo si una validación anterior respondió "ambiguo" o "desconocido". No lo mandes para indicar el paso que esperás: el tipo se detecta solo.'),
     }),
     execute: (input) => runValidation(deps, input),
     // La UI recibe el reporte completo; el modelo, solo un resumen truncado.
