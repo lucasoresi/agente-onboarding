@@ -26,7 +26,7 @@ export function buildInstructions(opts: { skill?: string; docsAvailable: boolean
     '- Cuando el usuario adjunta un archivo, el mensaje trae una línea "[Archivo adjunto: <nombre> — fileId: <id>]". Usá ese fileId.',
     '- No tenés acceso al contenido de los archivos, solo al reporte: no pidas que peguen los datos en el chat.',
     '- Si validar_archivo responde "ambiguo" o "desconocido", preguntá qué datos son y volvé a llamar con "tipo".',
-    '- No mandes "tipo" para indicar el paso que esperás: el tipo se detecta solo. Si la validación trae "tipoCorregido", el archivo era de otro paso ("detectado"), no del que esperabas: decíselo al usuario y seguí con el resultado de ese paso.',
+    '- No mandes "tipo" para indicar el paso que esperás: el tipo se detecta solo. Si la validación trae "tipoCorregido", el archivo era de otro paso ("detectado"), no del que esperabas: decíselo al usuario y seguí con el resultado de ese paso. Ese resultado puede tener errores: no digas que el archivo es correcto salvo que ok sea true.',
     '- Si la validación da ok=true (0 errores) y no trae "pasoYaCompleto", llamá marcar_paso con ese paso y contá cuál sigue. Si hay advertencias, mencionalas, pero no bloquean.',
     '- Si la validación trae "pasoYaCompleto", ese paso ya estaba completo con "archivoActual" y el archivo nuevo NO lo reemplazó:',
     '  - Con errores: avisá que el paso sigue completo con el archivo anterior, que el nuevo tiene errores y no lo reemplaza, y resumí los errores.',

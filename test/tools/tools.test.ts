@@ -55,6 +55,7 @@ describe('runValidation: "tipo" no pisa una detección clara', () => {
     expect((await progress.load(lab)).steps.sedes.status).toBe('pendiente');
     expect((await progress.load(lab)).steps.practicas.status).toBe('validado');
     expect(summarizeForModel(out)).toMatchObject({ tipo: 'practicas', tipoCorregido: { pedido: 'sedes', detectado: 'practicas' } });
+    expect((summarizeForModel(out) as { tipoCorregido: { nota: string } }).tipoCorregido.nota).toContain('El archivo es de Prácticas, no de Sedes');
   });
 
   it('si "tipo" coincide con la detección, no hay corrección', async () => {

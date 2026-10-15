@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { FileStore } from '@/lib/files/store';
 import type { ProgressStore } from '@/lib/onboarding/state';
 import { detectSchema } from '@/lib/validation/detect';
+import { getSchema } from '@/lib/validation/schemas';
 import { STEP_IDS, type StepId, type ValidationReport } from '@/lib/validation/types';
 import { normalizeCode } from '@/lib/validation/normalize';
 import { extractCatalogCodes, validateFile } from '@/lib/validation/validate';
@@ -97,7 +98,12 @@ export function summarizeForModel(out: ValidateOutput) {
         }),
       },
     }),
-    ...(out.tipoCorregido && { tipoCorregido: out.tipoCorregido }),
+    ...(out.tipoCorregido && {
+      tipoCorregido: {
+        ...out.tipoCorregido,
+        nota: `El archivo es de ${getSchema(out.tipoCorregido.detectado).title}, no de ${getSchema(out.tipoCorregido.pedido).title}: este resultado (con o sin errores) es de ${getSchema(out.tipoCorregido.detectado).title}. "${getSchema(out.tipoCorregido.pedido).title}" no cambió.`,
+      },
+    }),
     status: 'validado',
     archivo: r.fileName,
     tipo: r.schemaId,
