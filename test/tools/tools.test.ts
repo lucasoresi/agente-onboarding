@@ -1,6 +1,3 @@
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FileStore } from '@/lib/files/store';
 import { ProgressStore } from '@/lib/onboarding/state';
@@ -15,7 +12,7 @@ const opts = { toolCallId: 't1', messages: [] } as never;
 
 beforeEach(async () => {
   files = new FileStore();
-  progress = new ProgressStore(await mkdtemp(join(tmpdir(), 'tools-')));
+  progress = new ProgressStore();
 });
 
 describe('runValidation', () => {

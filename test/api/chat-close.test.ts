@@ -1,7 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const close = vi.fn(async () => {});
 
@@ -10,10 +7,6 @@ vi.mock('@/lib/tools/mcp', () => ({
   connectDocs: vi.fn(async () => ({ tools: {}, skill: '', available: false, close })),
 }));
 vi.mock('@/lib/agent/model', () => ({ getModel: () => ({}) }));
-
-beforeAll(async () => {
-  process.env.ONBOARDING_DIR = await mkdtemp(join(tmpdir(), 'chat-'));
-});
 
 describe('POST /api/chat', () => {
   it('cierra el cliente MCP si falla el armado del stream', async () => {

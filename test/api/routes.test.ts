@@ -1,53 +1,66 @@
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { csvBytes, xlsxBytes } from '../helpers';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { emptyProgress } from '@/lib/onboarding/state';
+import { prepareAttachment } from '@/lib/client/upload';
+import { xlsxBytes } from '../helpers';
 
-beforeAll(async () => {
-  process.env.ONBOARDING_DIR = await mkdtemp(join(tmpdir(), 'api-'));
+const captured: { deps?: any; messages?: unknown } = {};
+
+vi.mock('@/lib/tools/mcp', () => ({
+  DEFAULT_MCP_URL: 'http://mcp.test',
+  connectDocs: vi.fn(async () => ({ tools: {}, skill: '', available: false, close: async () => {} })),
+}));
+vi.mock('@/lib/agent/model', () => ({ getModel: () => ({}) }));
+vi.mock('@/lib/agent/run', () => ({
+  streamAgentResponse: vi.fn(async (messages: unknown, deps: unknown) => {
+    captured.messages = messages;
+    captured.deps = deps;
+    return new Response('ok');
+  }),
+}));
+
+const post = async (body: unknown) => {
+  const { POST } = await import('@/app/api/chat/route');
+  return POST(new Request('http://test/api/chat', { method: 'POST', body: JSON.stringify(body) }));
+};
+const messages = [{ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'hola' }] }];
+
+beforeEach(() => {
+  captured.deps = undefined;
 });
 
-async function upload(bytes: Uint8Array, name: string) {
-  const { POST } = await import('@/app/api/upload/route');
-  const form = new FormData();
-  form.append('file', new File([bytes as BlobPart], name));
-  return POST(new Request('http://test/api/upload', { method: 'POST', body: form }));
-}
-
-describe('POST /api/upload', () => {
-  it('parsea y devuelve fileId', async () => {
-    const res = await upload(xlsxBytes({ Usuarios: [['Nombre completo', 'Email', 'Rol'], ['Ana', 'a@x.com', 'Editor']] }), 'u.xlsx');
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data).toMatchObject({ nombre: 'u.xlsx', hojas: ['Usuarios'], filas: 1 });
-    expect(data.fileId).toMatch(/^f_/);
-    const { fileStore } = await import('@/lib/files/store');
-    expect(fileStore.get(data.fileId)?.fileName).toBe('u.xlsx');
+describe('POST /api/chat sin estado en el servidor', () => {
+  it('400 con lab inválido o sin mensajes', async () => {
+    expect((await post({ lab: '../x', messages })).status).toBe(400);
+    expect((await post({ lab: 'prueba' })).status).toBe(400);
   });
 
-  it('400 con motivo en español', async () => {
-    const res = await upload(csvBytes('x'), 'a.pdf');
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain('Formato no soportado');
+  it('las tools trabajan sobre el progreso que manda el navegador y lo devuelven', async () => {
+    const progress = emptyProgress('prueba');
+    progress.steps.usuarios = { status: 'completo', lastFile: 'u.xlsx' };
+    expect((await post({ lab: 'prueba', messages, progress })).status).toBe(200);
+    const out = await captured.deps.tools.ver_progreso.execute({}, { toolCallId: 't', messages: [] });
+    expect(out.completos).toBe(1);
+    expect(captured.deps.progressSnapshot().steps.usuarios.status).toBe('completo');
   });
 
-  it('400 sin archivo', async () => {
-    const { POST } = await import('@/app/api/upload/route');
-    const res = await POST(new Request('http://test/api/upload', { method: 'POST', body: new FormData() }));
-    expect(res.status).toBe(400);
+  it('valida el archivo adjunto que viene en el request', async () => {
+    const bytes = xlsxBytes({ Usuarios: [['Nombre completo', 'Email', 'Rol'], ['Ana Perez', 'a@x.com', 'Editor']] });
+    const { payload } = await prepareAttachment(new File([bytes as BlobPart], '2026-07-15_Usuarios.xlsx'));
+    await post({ lab: 'prueba', messages, archivo: payload });
+    const out = await captured.deps.tools.validar_archivo.execute({ fileId: payload.fileId }, { toolCallId: 't', messages: [] });
+    expect(JSON.stringify(out)).not.toContain('no está disponible');
+    expect(captured.deps.progressSnapshot().steps.usuarios.status).not.toBe('pendiente');
+  });
+
+  it('un progreso roto del navegador arranca vacío', async () => {
+    await post({ lab: 'prueba', messages, progress: 'basura' });
+    expect(captured.deps.progressSnapshot()).toEqual(emptyProgress('prueba'));
   });
 });
 
-describe('GET /api/progress', () => {
-  it('devuelve los 14 pasos', async () => {
-    const { GET } = await import('@/app/api/progress/route');
-    const res = await GET(new Request('http://test/api/progress?lab=prueba'));
-    expect(res.status).toBe(200);
-    expect((await res.json()).pasos).toHaveLength(14);
-  });
-  it('400 con lab inválido', async () => {
-    const { GET } = await import('@/app/api/progress/route');
-    expect((await GET(new Request('http://test/api/progress?lab=../x'))).status).toBe(400);
+describe('límite de tiempo en Vercel', () => {
+  it('alcanza para los 6 pasos del agente de hasta 45 s cada uno', async () => {
+    const { maxDuration } = await import('@/app/api/chat/route');
+    expect(maxDuration).toBeGreaterThanOrEqual(6 * 45);
   });
 });

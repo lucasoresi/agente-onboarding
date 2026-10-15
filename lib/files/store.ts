@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import type { ParsedFile } from '@/lib/validation/types';
 
 export const FILE_TTL_MS = 60 * 60 * 1000;
 
+/** Archivos disponibles durante un request: el navegador manda el último adjunto con cada mensaje. */
 export class FileStore {
   private files = new Map<string, { file: ParsedFile; expiresAt: number }>();
 
@@ -13,9 +13,14 @@ export class FileStore {
 
   put(file: ParsedFile): string {
     this.sweep();
-    const id = `f_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+    const id = `f_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
     this.files.set(id, { file, expiresAt: this.now() + this.ttlMs });
     return id;
+  }
+
+  /** Registra un archivo con el fileId que generó el navegador. */
+  set(id: string, file: ParsedFile) {
+    this.files.set(id, { file, expiresAt: this.now() + this.ttlMs });
   }
 
   get(id: string): ParsedFile | undefined {
@@ -33,7 +38,3 @@ export class FileStore {
     for (const [id, e] of this.files) if (e.expiresAt <= t) this.files.delete(id);
   }
 }
-
-// En `next dev` los módulos se recargan: el singleton vive en globalThis para no perder los archivos.
-const g = globalThis as unknown as { __onboardingFileStore?: FileStore };
-export const fileStore = (g.__onboardingFileStore ??= new FileStore());

@@ -19,7 +19,7 @@ export const MAX_ISSUES = 500;
 
 export type Catalogs = Partial<Record<CatalogName, Set<string>>>;
 
-const CATALOG_TITLES: Record<CatalogName, string> = { practicas: 'Prácticas', insumos: 'Insumos' };
+const CATALOG_TITLES: Record<CatalogName, string> = { practicas: 'Prácticas', insumos: 'Insumos', obras_sociales: 'Obras sociales' };
 
 export function pickSheet(file: ParsedFile, schema: Schema): Sheet {
   const wanted = schema.sheetNames.map(normalizeHeader);
@@ -231,6 +231,20 @@ export function validateFile(file: ParsedFile, schema: Schema, catalogs: Catalog
     }
   }
 
+  if (schema.dynamicCatalog && mapping.dynamic.length > 0) {
+    const name = schema.dynamicCatalog;
+    const catalog = catalogs[name];
+    const label = schema.dynamic?.label ?? 'columna';
+    if (!catalog) {
+      warn({ rule: 'catalogo_no_verificado', message: `No pude verificar los encabezados de ${label} contra el catálogo de ${CATALOG_TITLES[name]} porque todavía no se validó ese archivo.` });
+    } else {
+      for (const d of mapping.dynamic) {
+        if (catalog.has(normalizeCode(d.header))) continue;
+        warn({ rule: 'codigo_no_en_catalogo', column: d.header, value: d.header, message: `El encabezado "${d.header}" no está en el catálogo de ${CATALOG_TITLES[name]} validado.` });
+      }
+    }
+  }
+
   return {
     fileName: file.fileName,
     schemaId: schema.id,
@@ -257,4 +271,20 @@ export function extractCatalog(file: ParsedFile, schema: Schema): string[] | und
     if (!isEmpty(v) && !isExampleRow(cells)) codes.add(normalizeCode(v));
   }
   return [...codes];
+}
+
+/** Códigos del catálogo tal como vienen en el archivo (sin repetir), para mostrarlos al usuario. */
+export function extractCatalogCodes(file: ParsedFile, schema: Schema): string[] | undefined {
+  if (!schema.providesCatalog) return undefined;
+  const resolved = resolveHeader(pickSheet(file, schema), schema);
+  const index = mapColumns(resolved.headers, schema).fixed.get(schema.providesCatalog.column);
+  if (index === undefined) return [];
+  const codes = new Map<string, string>();
+  for (const { cells } of resolved.rows) {
+    const v = cells[index] ?? null;
+    if (isEmpty(v) || isExampleRow(cells)) continue;
+    const key = normalizeCode(v);
+    if (!codes.has(key)) codes.set(key, cellToText(v));
+  }
+  return [...codes.values()];
 }

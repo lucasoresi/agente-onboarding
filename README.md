@@ -19,9 +19,9 @@ npm run dev -- -p 3100       # http://localhost:3100/?lab=<id-del-laboratorio> (
 
 ## Cómo funciona
 
-- Los archivos se parsean en el server (`/api/upload`) y quedan en memoria 1 hora. **Su contenido nunca se manda a Gemini**: el modelo solo recibe el reporte de validación.
+- El servidor no guarda nada (funciona igual en Vercel). El navegador lee el archivo adjunto, lo comprime y lo manda con cada mensaje (solo el último adjunto; máximo 10 MB, o unos 3 MB comprimido por el límite de 4,5 MB de Vercel). El servidor lo valida en ese mismo request y lo descarta. **Su contenido nunca se manda a Gemini**: el modelo solo recibe el reporte de validación.
 - La validación es código determinístico (`lib/validation`), con 14 esquemas que un test compara contra las plantillas oficiales de Optacost (`test/fixtures/templates/`). Si cambian las plantillas, reemplazá esos archivos y corré `npm test`.
-- El progreso se guarda en `.onboarding/<lab>.json`. Un paso solo se completa con una validación sin errores.
+- El progreso se guarda en el navegador (`localStorage`, por laboratorio) y viaja con cada mensaje; el servidor lo devuelve actualizado en la metadata de la respuesta. Si la persona cambia de navegador o borra los datos del sitio, el progreso arranca de cero. Un paso solo se completa con una validación sin errores.
 
 ## Tests
 

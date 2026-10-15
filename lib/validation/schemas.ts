@@ -208,6 +208,7 @@ export const SCHEMAS: Schema[] = [
       req('nombre', 'Nombre', 'name', { aliases: ['nombre de obra social', 'obra social'] }),
       req('valorUb', 'Valor UB', 'number', { aliases: ['ub', 'valor de ub'], min: 0 }),
     ],
+    providesCatalog: { catalog: 'obras_sociales', column: 'codigo' },
   },
   {
     id: 'modulos_obra_social',
@@ -231,6 +232,7 @@ export const SCHEMAS: Schema[] = [
       replaceHint: 'reemplazalo por el código real de la obra social',
     },
     catalogRefs: [{ column: 'codigo', catalog: 'practicas' }],
+    dynamicCatalog: 'obras_sociales',
   },
   {
     id: 'precios_competencia',

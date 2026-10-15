@@ -1,18 +1,13 @@
-import { mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ProgressStore } from '@/lib/onboarding/state';
+import { emptyProgress, normalizeProgress, ProgressStore } from '@/lib/onboarding/state';
 import { nextPendingStep, progressView } from '@/lib/onboarding/steps';
 
-let dir: string;
 let store: ProgressStore;
 const ok = { fileName: '2026-07-15_Usuarios.xlsx', ok: true, errorCount: 0, warningCount: 1 };
 const bad = { fileName: '2026-07-15_Usuarios.xlsx', ok: false, errorCount: 3, warningCount: 0 };
 
-beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'onb-'));
-  store = new ProgressStore(dir, () => new Date('2026-10-09T12:00:00Z'));
+beforeEach(() => {
+  store = new ProgressStore({ now: () => new Date('2026-10-09T12:00:00Z') });
 });
 
 describe('ProgressStore', () => {
@@ -22,11 +17,11 @@ describe('ProgressStore', () => {
     expect(nextPendingStep(p)?.id).toBe('usuarios');
   });
 
-  it('registra validaciones y persiste en disco', async () => {
+  it('registra validaciones y las devuelve en el snapshot', async () => {
     await store.recordValidation('labmedicina', 'usuarios', bad);
     expect((await store.load('labmedicina')).steps.usuarios).toMatchObject({ status: 'con_errores', errors: 3 });
     await store.recordValidation('labmedicina', 'usuarios', ok);
-    const raw = JSON.parse(await readFile(join(dir, 'labmedicina.json'), 'utf8'));
+    const raw = JSON.parse(JSON.stringify(store.snapshot('labmedicina')));
     expect(raw.steps.usuarios).toMatchObject({ status: 'validado', lastFile: ok.fileName, validatedAt: '2026-10-09T12:00:00.000Z' });
   });
 
@@ -43,13 +38,13 @@ describe('ProgressStore', () => {
     if (r3.ok) expect(nextPendingStep(r3.progress)?.id).toBe('sedes');
   });
 
-  it('revalidar OK un paso completo lo mantiene completo; con errores lo baja', async () => {
+  it('revalidar un paso completo lo mantiene completo, con OK o con errores', async () => {
     await store.recordValidation('labmedicina', 'usuarios', ok);
     await store.markComplete('labmedicina', 'usuarios');
     await store.recordValidation('labmedicina', 'usuarios', ok);
     expect((await store.load('labmedicina')).steps.usuarios.status).toBe('completo');
     await store.recordValidation('labmedicina', 'usuarios', bad);
-    expect((await store.load('labmedicina')).steps.usuarios.status).toBe('con_errores');
+    expect((await store.load('labmedicina')).steps.usuarios.status).toBe('completo');
   });
 
   it('guarda catálogos solo de validaciones OK', async () => {
@@ -73,11 +68,13 @@ describe('ProgressStore', () => {
     await expect(store.load('../etc')).rejects.toThrow('inválido');
   });
 
-  it('JSON corrupto: lo renombra y arranca vacío (Review Focus 5)', async () => {
-    await writeFile(join(dir, 'labmedicina.json'), '{ "lab": "labmed');
-    const p = await store.load('labmedicina');
-    expect(p.steps.usuarios.status).toBe('pendiente');
-    expect((await readdir(dir)).some((f) => f.startsWith('labmedicina.json.corrupto-'))).toBe(true);
+  it('arranca desde el progreso que manda el navegador y no lo modifica', async () => {
+    const initial = emptyProgress('labmedicina');
+    initial.steps.usuarios = { status: 'completo', lastFile: 'u.xlsx' };
+    const s2 = new ProgressStore({ initial: [initial] });
+    await s2.recordValidation('labmedicina', 'sedes', ok);
+    expect(s2.snapshot('labmedicina').steps).toMatchObject({ usuarios: { status: 'completo' }, sedes: { status: 'validado' } });
+    expect(initial.steps.sedes.status).toBe('pendiente');
   });
 });
 
@@ -89,5 +86,28 @@ describe('progressView', () => {
     expect(v.total).toBe(14);
     expect(v.completos).toBe(1);
     expect(v.pasos[0]).toMatchObject({ id: 'usuarios', categoria: '01', categoriaTitulo: 'Estructura y equipo', estado: 'completo' });
+  });
+});
+
+describe('normalizeProgress', () => {
+  it('cualquier cosa inválida da progreso vacío', () => {
+    for (const raw of [undefined, null, 'x', 3, [], { lab: 'otro' }]) {
+      expect(normalizeProgress(raw, 'labmedicina')).toEqual(emptyProgress('labmedicina'));
+    }
+  });
+
+  it('conserva pasos y catálogos válidos e ignora el resto', () => {
+    const p = normalizeProgress(
+      {
+        lab: 'labmedicina',
+        steps: { usuarios: { status: 'completo', lastFile: 'u.xlsx' }, sedes: { status: 'raro' }, inventado: { status: 'completo' } },
+        catalogs: { practicas: ['1', '2'], insumos: [1], otro: ['x'] },
+      },
+      'labmedicina',
+    );
+    expect(p.steps.usuarios).toEqual({ status: 'completo', lastFile: 'u.xlsx' });
+    expect(p.steps.sedes.status).toBe('pendiente');
+    expect('inventado' in p.steps).toBe(false);
+    expect(p.catalogs).toEqual({ practicas: ['1', '2'] });
   });
 });

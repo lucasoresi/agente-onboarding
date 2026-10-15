@@ -56,7 +56,7 @@ export type DynamicSpec = {
   replaceHint: string;
 };
 
-export type CatalogName = 'practicas' | 'insumos';
+export type CatalogName = 'practicas' | 'insumos' | 'obras_sociales';
 
 export type Schema = {
   id: StepId;
@@ -71,6 +71,8 @@ export type Schema = {
   uniquePairs?: [string, string][];
   distinctPair?: [string, string];
   catalogRefs?: { column: string; catalog: CatalogName }[];
+  /** Los encabezados de las columnas dinámicas son códigos de este catálogo (por ejemplo, códigos de obra social). */
+  dynamicCatalog?: CatalogName;
   providesCatalog?: { catalog: CatalogName; column: string };
 };
 

@@ -81,3 +81,18 @@ describe('friendlyError', () => {
     expect(friendlyError(new APICallError({ message: 'm', url: 'u', requestBodyValues: {}, statusCode: 503 }))).toContain('no está respondiendo');
   });
 });
+
+describe('streamAgentResponse: devuelve el progreso al navegador', () => {
+  it('manda el progreso actualizado en la metadata al terminar cada paso', async () => {
+    let completos = 0;
+    const tools = {
+      marcar_paso: tool({ inputSchema: z.object({}), execute: async () => { completos++; return { ok: true }; } }),
+    };
+    const model = scriptedModel(() => toolCallStream('marcar_paso', {}), () => textStream('Listo.'));
+    const res = await streamAgentResponse(userMessage, {
+      model, tools, instructions: 'x', docsAvailable: true, maxRetries: 0, progressSnapshot: () => ({ completos }),
+    });
+    const body = await res.text();
+    expect(body).toContain('"progress":{"completos":1}');
+  });
+});

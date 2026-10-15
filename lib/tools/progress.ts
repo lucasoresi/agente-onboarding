@@ -30,12 +30,27 @@ export function createProgressTools(deps: { progress: ProgressStore; lab: string
     }),
     marcar_paso: tool({
       description:
-        'Marca un paso como completo. Solo funciona si el último archivo validado de ese paso no tuvo errores; si falla, explicale al usuario el motivo.',
-      inputSchema: z.object({ paso: z.enum(STEP_IDS) }),
-      execute: async ({ paso }) => {
-        const r = await deps.progress.markComplete(deps.lab, paso);
+        'Marca un paso como completo. Solo funciona si el último archivo validado de ese paso no tuvo errores; si falla, explicale al usuario el motivo. Marcar un paso NO carga datos en Optacost.',
+      inputSchema: z.object({
+        paso: z.enum(STEP_IDS),
+        reemplazar: z
+          .boolean()
+          .optional()
+          .describe('Solo si el paso ya estaba completo y el usuario confirmó que el archivo nuevo reemplace al anterior.'),
+      }),
+      execute: async ({ paso, reemplazar }) => {
+        const r = await deps.progress.markComplete(deps.lab, paso, { replace: reemplazar });
         if (!r.ok) return { ok: false, mensaje: r.reason };
-        return { ok: true, mensaje: `Paso "${getSchema(paso).title}" completo.`, siguiente: stepBrief(nextPendingStep(r.progress)) };
+        const siguiente = stepBrief(nextPendingStep(r.progress));
+        const titulo = getSchema(paso).title;
+        const base = r.replaced ? `Paso "${titulo}" completo: el archivo nuevo reemplazó a ${r.replaced}.` : `Paso "${titulo}" completo.`;
+        if (siguiente) return { ok: true, mensaje: base, siguiente };
+        return {
+          ok: true,
+          todosCompletos: true,
+          siguiente: null,
+          mensaje: `${base} Los 14 pasos quedaron validados. Validar no es cargar: todavía no se cargó nada en Optacost; el equipo de Optacost va a cargar los datos a partir de estos archivos.`,
+        };
       },
     }),
   };

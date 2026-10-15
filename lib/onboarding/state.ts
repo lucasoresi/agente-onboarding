@@ -1,5 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { normalizeCode } from '@/lib/validation/normalize';
 import { getSchema } from '@/lib/validation/schemas';
 import { STEP_IDS, type CatalogName, type StepId } from '@/lib/validation/types';
 import type { Catalogs } from '@/lib/validation/validate';
@@ -7,12 +6,19 @@ import { LAB_ID } from './lab';
 
 export type StepStatus = 'pendiente' | 'con_errores' | 'validado' | 'completo';
 
+export type CatalogUpdate = { name: CatalogName; codes: string[] };
+
 export type StepState = {
   status: StepStatus;
   lastFile?: string;
   validatedAt?: string;
   errors?: number;
   warnings?: number;
+  rows?: number;
+  /** Archivo válido que reemplazaría al de un paso completo; se aplica solo si el usuario lo confirma. */
+  pending?: { fileName: string; validatedAt: string; warnings: number; rows?: number; catalog?: CatalogUpdate };
+  /** Último intento con errores sobre un paso que ya estaba completo (no lo reemplaza). */
+  lastAttempt?: { fileName: string; validatedAt: string; errors: number };
 };
 
 export type LabProgress = {
@@ -21,7 +27,7 @@ export type LabProgress = {
   catalogs: Partial<Record<CatalogName, string[]>>;
 };
 
-export type ValidationSummary = { fileName: string; ok: boolean; errorCount: number; warningCount: number };
+export type ValidationSummary = { fileName: string; ok: boolean; errorCount: number; warningCount: number; rows?: number };
 
 export function emptyProgress(lab: string): LabProgress {
   return {
@@ -35,46 +41,58 @@ function assertLab(lab: string) {
   if (!LAB_ID.test(lab)) throw new Error(`Identificador de laboratorio inválido: "${lab}"`);
 }
 
+const STATUSES: StepStatus[] = ['pendiente', 'con_errores', 'validado', 'completo'];
+const CATALOG_NAMES: CatalogName[] = ['practicas', 'insumos', 'obras_sociales'];
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Convierte lo que guardó el navegador (no confiable: puede faltar, estar viejo o roto) en un progreso válido.
+ * Ignora pasos desconocidos o con estado inválido y catálogos que no sean listas de textos.
+ */
+export function normalizeProgress(raw: unknown, lab: string): LabProgress {
+  const base = emptyProgress(lab);
+  if (!isObject(raw) || (raw.lab !== undefined && raw.lab !== lab)) return base;
+  if (isObject(raw.steps)) {
+    for (const id of STEP_IDS) {
+      const st = raw.steps[id];
+      if (isObject(st) && STATUSES.includes(st.status as StepStatus)) base.steps[id] = st as StepState;
+    }
+  }
+  if (isObject(raw.catalogs)) {
+    for (const [name, codes] of Object.entries(raw.catalogs)) {
+      if (CATALOG_NAMES.includes(name as CatalogName) && Array.isArray(codes) && codes.every((c) => typeof c === 'string')) base.catalogs[name as CatalogName] = codes;
+    }
+  }
+  return base;
+}
+
+/**
+ * Progreso de los laboratorios en memoria. El servidor no guarda nada: en cada mensaje el navegador manda
+ * el progreso que tiene guardado, las tools lo modifican acá y el resultado vuelve al navegador.
+ */
 export class ProgressStore {
   private queues = new Map<string, Promise<unknown>>();
+  private data = new Map<string, LabProgress>();
+  private readonly now: () => Date;
 
-  constructor(
-    private readonly dir: string,
-    private readonly now: () => Date = () => new Date(),
-  ) {}
-
-  private file(lab: string) {
-    assertLab(lab);
-    return join(this.dir, `${lab}.json`);
+  constructor(opts: { initial?: LabProgress[]; now?: () => Date } = {}) {
+    this.now = opts.now ?? (() => new Date());
+    for (const p of opts.initial ?? []) this.data.set(p.lab, structuredClone(p));
   }
 
   async load(lab: string): Promise<LabProgress> {
-    const file = this.file(lab);
-    let text: string;
-    try {
-      text = await readFile(file, 'utf8');
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return emptyProgress(lab);
-      throw e;
-    }
-    try {
-      const raw = JSON.parse(text) as Partial<LabProgress>;
-      const base = emptyProgress(lab);
-      return { lab, steps: { ...base.steps, ...raw.steps }, catalogs: raw.catalogs ?? {} };
-    } catch {
-      const backup = `${file}.corrupto-${this.now().getTime()}`;
-      await rename(file, backup);
-      console.warn(`[onboarding] progreso corrupto de "${lab}", respaldado en ${backup}`);
-      return emptyProgress(lab);
-    }
+    return this.snapshot(lab);
+  }
+
+  /** Copia del progreso actual, para devolverla al navegador. */
+  snapshot(lab: string): LabProgress {
+    assertLab(lab);
+    const p = this.data.get(lab);
+    return p ? structuredClone(p) : emptyProgress(lab);
   }
 
   private async save(p: LabProgress) {
-    await mkdir(this.dir, { recursive: true });
-    const file = this.file(p.lab);
-    const tmp = `${file}.${process.pid}.tmp`;
-    await writeFile(tmp, JSON.stringify(p, null, 2));
-    await rename(tmp, file);
+    this.data.set(p.lab, structuredClone(p));
   }
 
   private update<T>(lab: string, fn: (p: LabProgress) => T): Promise<T> {
@@ -91,31 +109,63 @@ export class ProgressStore {
     return next;
   }
 
-  recordValidation(
-    lab: string,
-    step: StepId,
-    r: ValidationSummary,
-    catalog?: { name: CatalogName; codes: string[] },
-  ): Promise<LabProgress> {
+  /**
+   * Registra el resultado de una validación. Un paso completo nunca se pierde por una validación nueva:
+   * con errores queda como intento fallido; sin errores queda pendiente hasta que el usuario confirme el reemplazo.
+   */
+  recordValidation(lab: string, step: StepId, r: ValidationSummary, catalog?: CatalogUpdate): Promise<LabProgress> {
     return this.update(lab, (p) => {
       const prev = p.steps[step];
-      const status: StepStatus = !r.ok ? 'con_errores' : prev.status === 'completo' ? 'completo' : 'validado';
+      const validatedAt = this.now().toISOString();
+      if (prev.status === 'completo') {
+        if (r.ok) {
+          p.steps[step] = { ...prev, pending: { fileName: r.fileName, validatedAt, warnings: r.warningCount, rows: r.rows, catalog } };
+        } else {
+          p.steps[step] = { ...prev, lastAttempt: { fileName: r.fileName, validatedAt, errors: r.errorCount } };
+        }
+        return p;
+      }
       p.steps[step] = {
-        status,
+        status: r.ok ? 'validado' : 'con_errores',
         lastFile: r.fileName,
-        validatedAt: this.now().toISOString(),
+        validatedAt,
         errors: r.errorCount,
         warnings: r.warningCount,
+        rows: r.rows,
       };
       if (r.ok && catalog) p.catalogs[catalog.name] = catalog.codes;
       return p;
     });
   }
 
-  markComplete(lab: string, step: StepId): Promise<{ ok: true; progress: LabProgress } | { ok: false; reason: string }> {
+  markComplete(
+    lab: string,
+    step: StepId,
+    opts: { replace?: boolean } = {},
+  ): Promise<{ ok: true; progress: LabProgress; replaced?: string } | { ok: false; reason: string }> {
     return this.update(lab, (p) => {
       const s = p.steps[step];
       const title = getSchema(step).title;
+      if (s.status === 'completo') {
+        if (!s.pending) return { ok: true as const, progress: p };
+        if (!opts.replace) {
+          return {
+            ok: false as const,
+            reason: `${title} ya está completo con ${s.lastFile}. El archivo nuevo (${s.pending.fileName}) lo reemplazaría: confirmalo con el usuario y volvé a llamar con reemplazar=true.`,
+          };
+        }
+        const { pending } = s;
+        p.steps[step] = {
+          status: 'completo',
+          lastFile: pending.fileName,
+          validatedAt: pending.validatedAt,
+          errors: 0,
+          warnings: pending.warnings,
+          rows: pending.rows,
+        };
+        if (pending.catalog) p.catalogs[pending.catalog.name] = pending.catalog.codes;
+        return { ok: true as const, progress: p, replaced: s.lastFile };
+      }
       if (s.status === 'con_errores') {
         return {
           ok: false as const,
@@ -133,15 +183,7 @@ export class ProgressStore {
   async catalogs(lab: string): Promise<Catalogs> {
     const p = await this.load(lab);
     const out: Catalogs = {};
-    for (const [name, codes] of Object.entries(p.catalogs) as [CatalogName, string[]][]) out[name] = new Set(codes);
+    for (const [name, codes] of Object.entries(p.catalogs) as [CatalogName, string[]][]) out[name] = new Set(codes.map((c) => normalizeCode(c)));
     return out;
   }
-}
-
-const g = globalThis as unknown as { __onboardingProgressStore?: ProgressStore };
-
-export function getProgressStore(): ProgressStore {
-  return (g.__onboardingProgressStore ??= new ProgressStore(
-    process.env.ONBOARDING_DIR ?? join(process.cwd(), '.onboarding'),
-  ));
 }
